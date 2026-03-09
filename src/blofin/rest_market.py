@@ -1,5 +1,5 @@
 from typing import Dict, Optional
-from .client import Client
+from blofin.base import BaseClient
 
 class MarketAPI:
     """BloFin Market Data REST API client.
@@ -8,7 +8,7 @@ class MarketAPI:
     order books, trades, and other market information.
     """
     
-    def __init__(self, client: Client):
+    def __init__(self, client: BaseClient):
         self._client = client
 
     def getInstruments(self, instId: str = None) -> Dict:
