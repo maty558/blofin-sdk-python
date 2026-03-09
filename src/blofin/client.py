@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Union
 from urllib.parse import urlencode
 from blofin.exceptions import BlofinAPIException
 import logging
+from blofin.rest_market import MarketAPI
 
 import requests
 import websockets
@@ -50,7 +51,10 @@ class BaseClient:
     def _get_server_timestamp(self) -> str:
         response = requests.get(f"{self.base_url}/api/v1/public/time")
         if response.status_code == 200:
-            return response.json()['data']['ts']
+            try:
+                return response.json()['data']['ts']
+            except KeyError:
+                logger.error("_get_server_timestamp | Pole 'data' alebo 'ts' chýba v odpovedi: %s", response.json())
         return str(int(time.time() * 1000))
 
     def _get_nonce(self) -> str:
@@ -147,6 +151,8 @@ class BaseClient:
                 'ACCESS-NONCE': nonce,
                 'ACCESS-PASSPHRASE': self.PASSPHRASE
             })
+        
+        print(f"_request | Method: {method}, URL: {url}, Data: {data}, Headers: {headers}")
         
         try:
             response = self.session.request(
@@ -248,6 +254,19 @@ class Client(BaseClient):
         # Replace with actual API call logic
         return {"positions": []}
 
+    def set_margin_mode(self, margin_mode: str) -> dict:
+        """Set margin mode for the account.
+
+        Args:
+            margin_mode: The margin mode to set (e.g., "isolated" or "cross").
+
+        Returns:
+            The API response as a dictionary.
+        """
+        endpoint = "/api/v1/account/set-margin-mode"
+        payload = {"marginMode": margin_mode}  # Updated to camelCase
+        return self.post(endpoint, data=payload)  # Opravené volanie na podporovaný argument
+
 
 class DemoClient(Client):
     """BloFin API HTTP client for demo trading environment."""
@@ -280,3 +299,29 @@ class DemoClient(Client):
             proxies=proxies,
             isDemo=True
         )
+        self.market_api = MarketAPI(self)  # Add MarketAPI instance
+
+    def getFundingRate(self, instId: Optional[str] = None) -> Dict:
+        """Get current funding rate."""
+        return self.market_api.getFundingRate(instId=instId)
+
+    def get_candlesticks(
+        self,
+        instId: str,
+        bar: Optional[str] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[str] = None
+    ) -> Dict:
+        """Get candlestick charts data."""
+        return self.market_api.getCandlesticks(
+            instId=instId, bar=bar, before=before, after=after, limit=limit
+        )
+
+    def get_candlesticks(self, instId: str, bar: Optional[str] = None, limit: Optional[int] = None) -> Dict:
+        """Get candlestick data."""
+        return self.market_api.get_candlesticks(instId=instId, bar=bar, limit=limit)
+
+    def get_tickers(self, instType: str, instId: Optional[str] = None) -> Dict:
+        """Get tickers data."""
+        return self.market_api.get_tickers(instType=instType, instId=instId)
