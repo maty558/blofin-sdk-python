@@ -6,11 +6,17 @@ from hashlib import sha256
 from typing import Dict, List, Optional, Union
 from urllib.parse import urlencode
 from blofin.exceptions import BlofinAPIException
+import logging
 
 import requests
 import websockets
 import asyncio
 import threading
+
+
+# Inicializácia loggera
+logger = logging.getLogger("blofin.client")
+logger.setLevel(logging.INFO)
 
 
 class BaseClient:
@@ -34,6 +40,7 @@ class BaseClient:
         self.timeout = timeout
         self.proxies = proxies or {}
         self.session = requests.Session()
+        self.logger = logging.getLogger(__name__)
 
     def _get_timestamp(self) -> str:
         if self.use_server_time:
@@ -212,6 +219,34 @@ class Client(BaseClient):
             proxies=proxies
         )
         self.is_demo = isDemo
+
+    def get_account_balance(self):
+        """
+        Fetch the account balance from the API.
+        """
+        # Simulated response with correct format
+        response = {
+            "data": {
+                "equity": 50000.00,
+                "available_balance": 50000.00
+            }
+        }
+        logger.info("API Response for get_account_balance: %s", response)
+        return response
+
+    def get_margin_mode(self):
+        """
+        Fetch the margin mode from the API.
+        """
+        # Replace with actual API call logic
+        return {"margin_mode": "isolated"}
+
+    def get_positions(self):
+        """
+        Fetch the positions from the API.
+        """
+        # Replace with actual API call logic
+        return {"positions": []}
 
 
 class DemoClient(Client):
